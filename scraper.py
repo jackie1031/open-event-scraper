@@ -51,7 +51,8 @@ def parse_tracklist(track_data):
                 header_line = int(row["Header Line"]),
                 key_color = row["Key Color"],
                 location = row["Room"],
-                gid = row["GID"]
+                gid = row["GID"],
+                # version = row["Version"]
             )
             tracks.append(track)
 
@@ -122,6 +123,7 @@ def parse_row(row, last_speaker, last_session, current_track):
         speaker.web = row["Website or Blog"]
         speaker.linkedin = parser.get_linkedin_url(row)
         speaker.biography = row["Please provide a short bio for the program"]
+        speaker.email = row["Email"]
         speaker.github = row["github"]
         speaker.twitter = row["twitter"]
         speaker.country = row["Country/Region of Origin"]
@@ -151,9 +153,9 @@ def parse_row(row, last_speaker, last_session, current_track):
     # we encounter this session
     session_time = parse_time(row["Date"] + " " + row["Time"])
     if session_time is not None:
-        session.end_time = (session_time + SESSION_LENGTH).isoformat() # TODO: +30 minutes
+        session.end = (session_time + SESSION_LENGTH).isoformat() # TODO: +30 minutes
         if not hasattr(session, 'start_time'):
-            session.start_time = session_time.isoformat()
+            session.begin = session_time.isoformat()
 
     # only update attributes not already set
     if not hasattr(session, 'title'):
@@ -166,21 +168,16 @@ def parse_row(row, last_speaker, last_session, current_track):
 
     if not hasattr(session, 'description'):
         session.description = row["Abstract of talk or project"]
+    if not hasattr(session, 'id'):
+        session.id = session_id
     if not hasattr(session, 'type'):
         session.type = row["Type"]
     if not hasattr(session, 'track'):
-        session.track = {'id': track.id, 'name': track.name}
+        session.track = track.id
     if not hasattr(session, 'location'):
-        if row.has_key('Location'):
-            session.location = row['Location']
-        else:
-            session.location = track.location
+        session.location = track.location
     if speaker is not None:
-        session.speakers.append({
-            'name': speaker.name, 
-            'id': speaker.id, 
-            'organisation': speaker.organisation
-        })
+        session.speakers.append({'name': speaker.name, 'id': speaker.id})
 
     return (speaker, session)
 
@@ -232,7 +229,7 @@ def fetch_tsv_data(gid):
     return res.read()
 
 def write_json(filename, root_key, the_json):
-    f = open(filename + '.json', 'w')
+    f = open(filename , 'w')
     the_json = simplejson.dumps(simplejson.loads(the_json), indent=2, sort_keys=False)
     json_to_write = '{ "%s":%s}' % (root_key, the_json)
     f.write(json_to_write)
@@ -265,8 +262,8 @@ if __name__ == "__main__":
 
     # # print json.dumps(SPEAKERS[0].__dict__)
     speakers_json = jsonpickle.encode(SPEAKERS)
-    write_json('out/speakers', 'speakers', speakers_json)
+    write_json('out/1/speakers', 'speakers', speakers_json)
     session_json = jsonpickle.encode(SESSIONS)
-    write_json('out/sessions', 'sessions', session_json)
+    write_json('out/1/sessions', 'sessions', session_json)
     tracks_json = jsonpickle.encode(tracks)
-    write_json('out/tracks', 'tracks', tracks_json)
+    write_json('out/1/tracks', 'tracks', tracks_json)
